@@ -20,13 +20,8 @@
   "dependencies": {
     "jsdom": "^26.1.0"
   },
+  "type": "commonjs",
   "scripts": {
     "test": "jest"
-  },
-  "jest": {
-    "transform": {
-      "^.+\\.(ts|tsx)$": "ts-jest",
-      "^.+\\.(js|jsx)$": "babel-jest"
-    }
   }
 }

@@ -1,0 +1,27 @@
+{
+  "name": "js-pro-course",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lessons/12-05/12-05-24HW.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/prostokolya94/js-pro-course.git"
+  },
+  "private": true,
+  "devDependencies": {
+    "@babel/preset-env": "^7.27.2",
+    "@babel/preset-typescript": "^7.27.1",
+    "@types/jest": "^29.5.14",
+    "@types/jsdom": "^21.1.7",
+    "babel-eslint": "^10.1.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.3.4"
+  },
+  "dependencies": {
+    "jsdom": "^26.1.0"
+  },
+  "type": "commonjs",
+  "scripts": {
+    "test": "jest"
+  }
+}

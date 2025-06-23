@@ -1,0 +1,379 @@
+openapi: 3.0.0
+info:
+  title: Task Management API
+  description: API для управления задачами и обсуждениями
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: Аутентификация
+  - name: Users
+    description: Управление пользователями
+  - name: Tasks
+    description: Управление задачами
+  - name: Comments
+    description: Комментарии к задачам
+  - name: Ratings
+    description: Оценки задач
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: john_doe
+        email:
+          type: string
+          example: john@example.com
+        role:
+          type: string
+          enum: [admin, interviewer, user]
+          example: user
+        rating:
+          type: number
+          example: 4.5
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Разработка REST API"
+        description:
+          type: string
+          example: "Создание клона LeetCode"
+        author_id:
+          type: integer
+          example: 1
+        average_rating:
+          type: number
+          example: 4.2
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        task_id:
+          type: integer
+          example: 1
+        author_id:
+          type: integer
+          example: 1
+        content:
+          type: string
+          example: "Хорошая задача!"
+
+    Rating:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        task_id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 4
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Вход в систему
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        200:
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        401:
+          description: Неверные учетные данные
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Выход из системы
+      security:
+        - bearerAuth: []
+      responses:
+        204:
+          description: Успешный выход
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Получить список пользователей
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [admin, interviewer, user]
+      responses:
+        200:
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+    post:
+      tags:
+        - Users
+      summary: Создать нового пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [admin, interviewer, user]
+      responses:
+        201:
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/{userId}:
+    patch:
+      tags:
+        - Users
+      summary: Обновить профиль пользователя
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                role:
+                  type: string
+                  enum: [admin, interviewer, user]
+      responses:
+        200:
+          description: Профиль обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        403:
+          description: Недостаточно прав
+
+  /tasks:
+    get:
+      tags:
+        - Tasks
+      summary: Получить список задач
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        200:
+          description: Список задач с пагинацией
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+
+    post:
+      tags:
+        - Tasks
+      summary: Создать новую задачу
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+      responses:
+        201:
+          description: Задача создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+  /tasks/{taskId}/comments:
+    get:
+      tags:
+        - Comments
+      summary: Получить комментарии к задаче
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Список комментариев
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+
+    post:
+      tags:
+        - Comments
+      summary: Добавить комментарий к задаче
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+      responses:
+        201:
+          description: Комментарий добавлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+
+  /tasks/{taskId}/ratings:
+    post:
+      tags:
+        - Ratings
+      summary: Оценить задачу
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                score:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+      responses:
+        200:
+          description: Задача оценена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+        400:
+          description: Неверная оценка

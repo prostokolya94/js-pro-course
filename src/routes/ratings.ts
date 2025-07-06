@@ -1,7 +1,13 @@
-const fp = require('fastify-plugin');
+import fp from 'fastify-plugin';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { CreateRatingBody, CreateRatingParams, CreateRatingResponse } from "../types/RatingTypes";
 
-async function ratingRoutes(fastify, opts) {
-    fastify.post('/tasks/:taskId/ratings', {
+async function ratingRoutes(fastify: FastifyInstance, opts: unknown) {
+    fastify.post<{
+        Params: CreateRatingParams;
+        Body: CreateRatingBody;
+        Reply: CreateRatingResponse;
+    }>('/tasks/:taskId/ratings', {
         schema: {
             security: [{ bearerAuth: [] }],
             params: {
@@ -31,7 +37,10 @@ async function ratingRoutes(fastify, opts) {
                 }
             }
         },
-        handler: async (request, reply) => {
+        handler: async (
+            request: FastifyRequest,
+            reply: FastifyReply
+        ): Promise<CreateRatingResponse> => {
             const { taskId } = request.params;
             const userId = request.user.sub;
             const { score } = request.body;
@@ -55,18 +64,18 @@ async function ratingRoutes(fastify, opts) {
 
             await fastify.pg.query(
                 `UPDATE tasks 
-         SET average_rating = (
-           SELECT AVG(score) 
-           FROM ratings 
-           WHERE task_id = $1
-         )
-         WHERE id = $1`,
+                 SET average_rating = (
+                   SELECT AVG(score) 
+                   FROM ratings 
+                   WHERE task_id = $1
+                 )
+                 WHERE id = $1`,
                 [taskId]
             );
 
-            reply.send({ rating: result.rows[0] });
+            return { rating: result.rows[0] };
         }
     });
 }
 
-module.exports = fp(ratingRoutes);
+export default fp(ratingRoutes);

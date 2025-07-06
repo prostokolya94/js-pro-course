@@ -1,7 +1,12 @@
-const fp = require('fastify-plugin');
+import fp from 'fastify-plugin';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import {CreateUserBody, CreateUserResponse, GetUserQueryParams, GetUsersResponse} from "../types/UserTypes";
 
-async function userRoutes(fastify, opts) {
-    fastify.get('/users', {
+async function userRoutes(fastify: FastifyInstance, opts: unknown) {
+    fastify.get<{
+        Querystring: GetUserQueryParams;
+        Reply: GetUsersResponse;
+    }>('/users', {
         schema: {
             security: [{ bearerAuth: [] }],
             querystring: {
@@ -9,13 +14,19 @@ async function userRoutes(fastify, opts) {
                 properties: {
                     page: { type: 'integer', minimum: 1 },
                     limit: { type: 'integer', minimum: 1, maximum: 100 }
-                }
+                },
+                required: ['page', 'limit']
             },
             response: {
                 200: {
                     type: 'object',
                     properties: {
-                        users: { type: 'array', items: { $ref: 'user.json#' } },
+                        users: {
+                            type: 'array',
+                            items: {
+                                $ref: 'http://example.com/schema#/definitions/user'
+                            }
+                        },
                         total: { type: 'integer' },
                         page: { type: 'integer' },
                         limit: { type: 'integer' }
@@ -23,7 +34,10 @@ async function userRoutes(fastify, opts) {
                 }
             }
         },
-        handler: async (request, reply) => {
+        handler: async (
+            request: FastifyRequest,
+            reply: FastifyReply
+        ): Promise<GetUsersResponse> => {
             const { page = 1, limit = 10 } = request.query;
             const offset = (page - 1) * limit;
 
@@ -34,17 +48,19 @@ async function userRoutes(fastify, opts) {
 
             const total = await fastify.pg.query('SELECT COUNT(*) FROM users');
 
-            reply.send({
+            return {
                 users: users.rows,
                 total: total.rows[0].count,
                 page,
                 limit
-            });
+            };
         }
     });
 
-    // Регистрация нового пользователя
-    fastify.post('/users', {
+    fastify.post<{
+        Body: CreateUserBody;
+        Reply: CreateUserResponse;
+    }>('/users', {
         schema: {
             body: {
                 type: 'object',
@@ -60,12 +76,17 @@ async function userRoutes(fastify, opts) {
                 201: {
                     type: 'object',
                     properties: {
-                        user: { $ref: 'user.json#' }
+                        user: {
+                            $ref: 'http://example.com/schema#/definitions/user'
+                        }
                     }
                 }
             }
         },
-        handler: async (request, reply) => {
+        handler: async (
+            request: FastifyRequest,
+            reply: FastifyReply
+        ): Promise<CreateUserResponse> => {
             const { username, email, password, role } = request.body;
 
             const hashedPassword = await fastify.bcrypt.hash(password, 10);
@@ -75,9 +96,11 @@ async function userRoutes(fastify, opts) {
                 [username, email, hashedPassword, role]
             );
 
-            reply.code(201).send({ user: result.rows[0] });
+            return {
+                user: result.rows[0]
+            };
         }
     });
 }
 
-module.exports = fp(userRoutes);
+export default fp(userRoutes);

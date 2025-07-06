@@ -24,7 +24,8 @@
     "fastify": "^4.29.1",
     "fastify-plugin": "^5.0.1",
     "pg": "^8.16.1",
-    "sequelize": "^6.15.1"
+    "sequelize": "^6.15.1",
+    "typescript": "^5.8.3"
   },
   "devDependencies": {
     "dotenv": "^16.4.5",

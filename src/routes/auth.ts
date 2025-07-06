@@ -1,7 +1,13 @@
-const fp = require('fastify-plugin');
+import fp from 'fastify-plugin';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { LoginBody, LoginResponse } from "../types/AuthTypes";
+import { User } from "../types/UserTypes";
 
-async function authRoutes(fastify, opts) {
-    fastify.post('/auth/login', {
+async function authRoutes(fastify: FastifyInstance, opts: unknown) {
+    fastify.post<{
+        Body: LoginBody;
+        Reply: LoginResponse;
+    }>('/auth/login', {
         schema: {
             body: {
                 type: 'object',
@@ -21,26 +27,35 @@ async function authRoutes(fastify, opts) {
                 }
             }
         },
-        handler: async (request, reply) => {
+        handler: async (
+            request: FastifyRequest,
+            reply: FastifyReply
+        ): Promise<LoginResponse> => {
             const { username, password } = request.body;
-            const user =  {
+
+            const user: User = {
                 id: 1,
-                username: username,
+                username,
                 email: "john@example.com",
                 role: "user",
                 rating: 4.5
-            }
+            };
 
             const token = fastify.jwt.sign({
                 sub: user.id,
                 role: user.role
             });
 
-            reply.send({ token, user: user.rows[0] });
+            return {
+                token,
+                user
+            };
         }
     });
 
-    fastify.post('/auth/logout', {
+    fastify.post<{
+        Reply: void;
+    }>('/auth/logout', {
         schema: {
             security: [{ bearerAuth: [] }],
             response: {
@@ -49,11 +64,14 @@ async function authRoutes(fastify, opts) {
                 }
             }
         },
-        handler: async (request, reply) => {
+        handler: async (
+            request: FastifyRequest,
+            reply: FastifyReply
+        ): Promise<void> => {
             reply.clearCookie('authToken');
             reply.code(204).send();
         }
     });
 }
 
-module.exports = fp(authRoutes);
+export default fp(authRoutes);
